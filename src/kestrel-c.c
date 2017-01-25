@@ -400,11 +400,6 @@ int32_t main(int argc, char *argv[]){
     return EXIT_SUCCESS;
     }
 
-  if(ArgsState(DEF_EXAMPLE, p, argc, "-x")){
-    PrintExamples();
-    return EXIT_SUCCESS;
-    }
-
   P->verbose  = ArgsState  (DEFAULT_VERBOSE, p, argc, "-v" );
   P->force    = ArgsState  (DEFAULT_FORCE,   p, argc, "-f" );
   P->estim    = ArgsState  (0,               p, argc, "-e" );

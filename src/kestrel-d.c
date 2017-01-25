@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <time.h>
 #include "mem.h"
+#include "msg.h"
 #include "defs.h"
 #include "buffer.h"
 #include "common.h"
@@ -332,32 +333,27 @@ int32_t main(int argc, char *argv[]){
   
   if((help = ArgsState(DEFAULT_HELP, p, argc, "-h")) == 1 || argc < 2){
     fprintf(stderr,
-    "Usage: GeDe [OPTION]... -r [FILE]  [FILE]:[...]                    \n"
-    "Decompress a genomic sequence compressed by GeCo.                  \n"
+    "Usage: KESTRELd [OPTION]... -r [FILE]  [FILE]:[...]                \n"
+    "Decompress a genomic sequence compressed by KESTRELc.              \n"
     "                                                                   \n"
     "Non-mandatory arguments:                                           \n"
     "                                                                   \n"
-    "  -h                    give this help,                            \n"
-    "  -v                    verbose mode (more information),           \n"
+    "  -h          give this help,                                      \n"
+    "  -v          verbose mode (more information),                     \n"
     "                                                                   \n"
-    "  -r <FILE>             reference file,                            \n"
+    "  -r <FILE>   reference file,                                      \n"
     "                                                                   \n"
     "Mandatory arguments:                                               \n"
     "                                                                   \n"
-    "  <FILE>                file to uncompress (last argument). For    \n"
-    "                        more files use splitting \":\" characters. \n"
+    "  <FILE>      file to uncompress (last argument). For              \n"
+    "              more files use splitting \":\" characters.           \n"
     "                                                                   \n"
-    "Report bugs to <{pratas,ap,pjf}@ua.pt>.                            \n");
+    "Report bugs to <{pratas,ap}@ua.pt>.                                \n");
     return EXIT_SUCCESS;
     }
 
   if(ArgsState(DEF_VERSION, p, argc, "-V")){
-    fprintf(stderr, "GeDe from GeCo %u.%u\n"
-    "Copyright (C) 2015 University of Aveiro.\nThis is Free software. \nYou "
-    "may redistribute copies of it under the terms of the GNU General \n"
-    "Public License v2 <http://www.gnu.org/licenses/gpl.html>.\nThere is NO "
-    "WARRANTY, to the extent permitted by law.\nWritten by Diogo Pratas, "
-    "Armando J. Pinho and Paulo J. S. G. Ferreira.\n", VERSION, RELEASE);
+    PrintVersion();
     return EXIT_SUCCESS;
     }
 
