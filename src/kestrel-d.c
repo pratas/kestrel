@@ -20,10 +20,10 @@
 
 void Decompress(Parameters *P, CModel **cModels, uint8_t id){
   FILE        *Reader  = Fopen(P->tar[id], "r");
-  char        *name    = ReplaceSubStr(P->tar[id], ".co", ".de"); 
+  char        *name    = ReplaceSubStr(P->tar[id], ".kc", ".kd"); 
   FILE        *Writter = Fopen(name, "w");
   uint64_t    nSymbols = 0;
-  uint32_t    n, k, cModel, totModels;
+  uint32_t    n, k, cModel, totModels; // lineSize = 100;
   double      *cModelWeight, cModelTotalWeight = 0;
   int32_t     idx = 0, idxOut = 0;
   uint8_t     *outBuffer, *symbolBuffer, sym = 0, irSym = 0, *pos;
@@ -46,6 +46,7 @@ void Decompress(Parameters *P, CModel **cModels, uint8_t id){
   P[id].gamma            = ReadNBits(32, Reader) / 65536.0;
   P[id].col              = ReadNBits(32, Reader);
   P[id].nModels          = ReadNBits(16, Reader);
+//  lineSize               = ReadNBits(32, Reader);
   for(k = 0 ; k < P[id].nModels ; ++k){
     P[id].model[k].ctx   = ReadNBits(16, Reader);
     P[id].model[k].den   = ReadNBits(16, Reader);
@@ -82,12 +83,24 @@ void Decompress(Parameters *P, CModel **cModels, uint8_t id){
       P[id].model[n].eDen);
     }
 
+//  uint64_t idxLS = 0;
   while(nSymbols--){
     #ifdef PROGRESS
     CalcProgress(P[id].size, ++i);
     #endif
 
     memset((void *)PT->freqs, 0, ALPHABET_SIZE * sizeof(double));
+
+/*
+    if(++idxLS == lineSize){
+      outBuffer[idxOut] = '\n';
+      if(++idxOut == BUFFER_SIZE){
+        fwrite(outBuffer, 1, idxOut, Writter);
+        idxOut = 0;
+        }
+      idxLS = 0;
+      }
+*/      
 
     n = 0;
     pos = &symbolBuffer[idx-1];
@@ -97,8 +110,6 @@ void Decompress(Parameters *P, CModel **cModels, uint8_t id){
       cModels[cModel]->alphaDen);
       ComputeWeightedFreqs(cModelWeight[n], pModel[n], PT);
       if(cModels[cModel]->edits != 0){
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        // SUBSTITUTIONS HANDLING:
         ++n;
         cModels[cModel]->SUBS.idx = GetPModelIdxCorr(cModels[cModel]->SUBS.seq
         ->buf+cModels[cModel]->SUBS.seq->idx-1, cModels[cModel], cModels[cModel]
@@ -106,21 +117,6 @@ void Decompress(Parameters *P, CModel **cModels, uint8_t id){
         ComputePModel(cModels[cModel], pModel[n], cModels[cModel]->SUBS.idx,
         cModels[cModel]->SUBS.eDen);
         ComputeWeightedFreqs(cModelWeight[n], pModel[n], PT);
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/*
-        // ADDITIONS HANDLING:
-        ++n;
-        cModels[cModel]->ADDS.idx2 = cModels[cModel]->ADDS.idx;
-        cModels[cModel]->ADDS.idx = GetPModelIdxCorr(cModels[cModel]->ADDS.seq
-        ->buf+cModels[cModel]->ADDS.seq->idx-1, cModels[cModel], cModels[cModel]
-        ->ADDS.idx);
-        ComputePModel(cModels[cModel], pModel[n], cModels[cModel]->ADDS.idx,10);
-        ComputeWeightedFreqs(cModelWeight[n], pModel[n], PT);
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        // TODO: DELETIONS
-*/
-
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         }
       ++n;
       }
@@ -164,8 +160,6 @@ void Decompress(Parameters *P, CModel **cModels, uint8_t id){
     for(cModel = 0 ; cModel < P[id].nModels ; ++cModel){
       if(cModels[cModel]->edits != 0){      // CORRECT CMODEL CONTEXTS
         CorrectCModelSUBS(cModels[cModel], pModel[++n], sym);
-  //    CorrectCModelADDS(cModels[cModel], pModel[++n], sym);
-        //CorrectCModelDELS(cModels[cModel], pModel[++n], sym);
         }
       ++n;
       }
@@ -241,42 +235,22 @@ CModel **LoadReference(Parameters *P)
       P->model[n].ir, REFERENCE, P->col, P->model[n].edits, P->model[n].eDen);
 
   sym = fgetc(Reader);
-  switch(sym){
-    case '>': type = 1; break;
-    case '@': type = 2; break;
-    default : type = 0;
-    }
-  rewind(Reader);
-
-  switch(type){
-    case 1:  nBases = NDNASymInFasta(Reader); break;
-    case 2:  nBases = NDNASymInFastq(Reader); break;
-    default: nBases = NDNASyminFile (Reader); break;
-    }
+  nBases = NDNASymInFastq(Reader);
 
   P->checksum   = 0;
   while((k = fread(readerBuffer, 1, BUFFER_SIZE, Reader)))
     for(idxPos = 0 ; idxPos < k ; ++idxPos)
       {
       sym = readerBuffer[idxPos];
-      if(type == 1){  // IS A FAST[A] FILE
-        if(sym == '>'){ header = 1; continue; }
-        if(sym == '\n' && header == 1){ header = 0; continue; }
-        if(sym == '\n') continue;
-        if(sym == 'N' ) continue;
-        if(header == 1) continue;
+      switch(line){
+        case 0: if(sym == '\n'){ line = 1; dna = 1; } break;
+        case 1: if(sym == '\n'){ line = 2; dna = 0; } break;
+        case 2: if(sym == '\n'){ line = 3; dna = 0; } break;
+        case 3: if(sym == '\n'){ line = 0; dna = 0; } break;
         }
-      else if(type == 2){ // IS A FAST[Q] FILE
-        switch(line){
-          case 0: if(sym == '\n'){ line = 1; dna = 1; } break;
-          case 1: if(sym == '\n'){ line = 2; dna = 0; } break;
-          case 2: if(sym == '\n'){ line = 3; dna = 0; } break;
-          case 3: if(sym == '\n'){ line = 0; dna = 0; } break;
-          }
-        if(dna == 0 || sym == '\n') continue;
-        if(dna == 1 && sym == 'N' ) continue;
-        }
-
+      if(dna == 0 || sym == '\n') continue;
+      if(dna == 1 && sym == 'N' ) continue;
+      
       // FINAL FILTERING DNA CONTENT
       if(sym != 'A' && sym != 'C' && sym != 'G' && sym != 'T')
         continue;

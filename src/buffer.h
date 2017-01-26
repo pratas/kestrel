@@ -31,6 +31,7 @@ void     UpdateCBuffer  (CBUF *);
 void     UpdateBuffer   (BUF *);
 void     RemoveCBuffer  (CBUF *);
 void     RemoveBuffer   (BUF *);
+void     ResetCBuffer   (CBUF *);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

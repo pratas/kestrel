@@ -22,7 +22,7 @@
 void Compress(Parameters *P, CModel **cModels, uint8_t id, uint32_t 
 refNModels, INF *I){
   FILE        *Reader  = Fopen(P->tar[id], "r");
-  char        *name    = concatenate(P->tar[id], ".co");
+  char        *name    = concatenate(P->tar[id], ".kc");
   FILE        *Writter = Fopen(name, "w");
   uint32_t    n, k, cModel, totModels, idxPos;
   int32_t     idx = 0;
@@ -39,31 +39,21 @@ refNModels, INF *I){
   if(P->verbose)
     fprintf(stdout, "Analyzing data and creating models ...\n");
 
-  #ifdef ESTIMATE
-  FILE *IAE = NULL;
-  char *IAEName = NULL;
-  if(P->estim == 1){
-    IAEName = concatenate(P->tar[id], ".iae");
-    IAE = Fopen(IAEName, "w");
-    }
-  #endif
-  
-  sym = fgetc(Reader);
-  switch(sym){
-    case '>': type = 1; break;
-    case '@': type = 2; break;
-    default : type = 0;
-    }
-  rewind(Reader);
-
-  switch(type){
-    case 1:  nBases = NDNASymInFasta(Reader); break;
-    case 2:  nBases = NDNASymInFastq(Reader); break;
-    default: nBases = NDNASyminFile (Reader); break;
-    }
- 
+  nBases = NDNASymInFastq(Reader);
   _bytes_output = 0;
   nSymbols      = NBytesInFile(Reader);
+  rewind(Reader);
+
+/*
+  uint32_t lineSize = 0;
+  char line1[4096];
+  char line2[4096];
+  if(fgets(line1, sizeof(line1), Reader) == NULL) exit(1);
+  if(fgets(line2, sizeof(line2), Reader) == NULL) exit(1);
+  lineSize = strlen(line2);
+  fprintf(stderr, "LineSize= %u\n", lineSize);
+  rewind(Reader);
+*/
   
   // EXTRA MODELS DERIVED FROM EDITS
   totModels = P->nModels;
@@ -106,6 +96,7 @@ refNModels, INF *I){
   WriteNBits((int) (P->gamma * 65536), 32, Writter);
   WriteNBits(P->col,                   32, Writter);
   WriteNBits(P->nModels,               16, Writter);
+//  WriteNBits(lineSize,                 32, Writter);
   for(n = 0 ; n < P->nModels ; ++n){
     WriteNBits(cModels[n]->ctx,        16, Writter);
     WriteNBits(cModels[n]->alphaDen,   16, Writter);
@@ -124,31 +115,19 @@ refNModels, INF *I){
       #endif
 
       sym = readerBuffer[idxPos];
-      if(type == 1){  // IS A FAST[A] FILE
-        if(sym == '>'){ header = 1; continue; }
-        if(sym == '\n' && header == 1){ header = 0; continue; }
-        if(sym == '\n') continue;
-        if(header == 1) continue;
+      switch(line){
+        case 0: if(sym == '\n'){ line = 1; dna = 1; } break;
+        case 1: if(sym == '\n'){ line = 2; dna = 0; } break;
+        case 2: if(sym == '\n'){ line = 3; dna = 0; } break;
+        case 3: if(sym == '\n'){ line = 0; dna = 0; } break;
         }
-      else if(type == 2){ // IS A FAST[Q] FILE
-        switch(line){
-          case 0: if(sym == '\n'){ line = 1; dna = 1; } break;
-          case 1: if(sym == '\n'){ line = 2; dna = 0; } break;
-          case 2: if(sym == '\n'){ line = 3; dna = 0; } break;
-          case 3: if(sym == '\n'){ line = 0; dna = 0; } break;
-          }
-        if(dna == 0 || sym == '\n') continue;
-        }
+      if(dna == 0 || sym == '\n') continue;
 
       // REMOVE SPECIAL SYMBOLS [WINDOWS TXT ISSUES]
       if(sym < 65 || sym > 122) continue; 
 
       // FINAL FILTERING DNA CONTENT
       if(sym != 'A' && sym != 'C' && sym != 'G' && sym != 'T'){
-        #ifdef ESTIMATE
-        if(P->estim != 0)
-          fprintf(IAE, "0\n");
-        #endif
         continue;
         }
 
@@ -183,10 +162,6 @@ refNModels, INF *I){
       MX->sum += MX->freqs[3] = 1 + (unsigned) (PT->freqs[3] * MX_PMODEL);
 
       AESym(sym, (int *)(MX->freqs), (int) MX->sum, Writter);
-      #ifdef ESTIMATE
-      if(P->estim != 0)
-        fprintf(IAE, "%.3g\n", PModelSymbolNats(MX, sym) / M_LN2);
-      #endif
 
       cModelTotalWeight = 0;
       for(n = 0 ; n < totModels ; ++n){
@@ -227,14 +202,6 @@ refNModels, INF *I){
   finish_encode(Writter);
   doneoutputtingbits(Writter);
   fclose(Writter);
-
-
-  #ifdef ESTIMATE
-  if(P->estim == 1){
-    fclose(IAE);
-    Free(IAEName);
-    }
-  #endif
 
   Free(MX);
   Free(name);
@@ -290,41 +257,20 @@ CModel **LoadReference(Parameters *P)
       cModels[n] = CreateCModel(P->model[n].ctx, P->model[n].den, 
       P->model[n].ir, REFERENCE, P->col, P->model[n].edits, P->model[n].eDen);
 
-  sym = fgetc(Reader);
-  switch(sym){ 
-    case '>': type = 1; break;
-    case '@': type = 2; break;
-    default : type = 0;
-    }
-  rewind(Reader);
-
-  switch(type){
-    case 1:  nBases = NDNASymInFasta(Reader); break;
-    case 2:  nBases = NDNASymInFastq(Reader); break;
-    default: nBases = NDNASyminFile (Reader); break;
-    }
-
+  nBases = NDNASymInFastq(Reader);
   P->checksum = 0;
   while((k = fread(readerBuffer, 1, BUFFER_SIZE, Reader)))
     for(idxPos = 0 ; idxPos < k ; ++idxPos){
 
       sym = readerBuffer[idxPos];
-      if(type == 1){  // IS A FAST[A] FILE
-        if(sym == '>'){ header = 1; continue; }
-        if(sym == '\n' && header == 1){ header = 0; continue; }
-        if(sym == '\n') continue;
-        if(header == 1) continue;
+      switch(line){
+        case 0: if(sym == '\n'){ line = 1; dna = 1; } break;
+        case 1: if(sym == '\n'){ line = 2; dna = 0; } break;
+        case 2: if(sym == '\n'){ line = 3; dna = 0; } break;
+        case 3: if(sym == '\n'){ line = 0; dna = 0; } break;
         }
-      else if(type == 2){ // IS A FAST[Q] FILE
-        switch(line){
-          case 0: if(sym == '\n'){ line = 1; dna = 1; } break;
-          case 1: if(sym == '\n'){ line = 2; dna = 0; } break;
-          case 2: if(sym == '\n'){ line = 3; dna = 0; } break;
-          case 3: if(sym == '\n'){ line = 0; dna = 0; } break;
-          }
-        if(dna == 0 || sym == '\n') continue;
-        }
-
+      if(dna == 0 || sym == '\n') continue;
+      
       // FINAL FILTERING DNA CONTENT
       if(sym != 'A' && sym != 'C' && sym != 'G' && sym != 'T')
         continue;
@@ -501,16 +447,15 @@ int32_t main(int argc, char *argv[]){
       fprintf(stdout, "File %d compressed bytes: %"PRIu64" (", n+1, (uint64_t) 
       I[n].bytes);
       PrintHRBytes(I[n].bytes);
-      fprintf(stdout, ") , Normalized Dissimilarity Rate: %.6g\n", 
-      (8.0*I[n].bytes)/(2*I[n].size));
+      fprintf(stdout, ")\n");
       }
 
 
   fprintf(stdout, "Total bytes: %"PRIu64" (", totalBytes);
   PrintHRBytes(totalBytes);
-  fprintf(stdout, "), %.4g bpb, %.4g bps w/ no header, Normalized Dissimilarity" 
-  " Rate: %.6g\n", ((8.0*totalBytes)/totalSize), ((8.0*(totalBytes-headerBytes))
-  /totalSize), (8.0*totalBytes)/(2.0*totalSize));  
+  fprintf(stdout, "), %.4g bpb, %.4g bps w/ no header\n", 
+  ((8.0*totalBytes)/totalSize), ((8.0*(totalBytes-headerBytes))
+  /totalSize));  
   stop = clock();
   fprintf(stdout, "Spent %g sec.\n", ((double)(stop-start))/CLOCKS_PER_SEC);
 
