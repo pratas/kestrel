@@ -1,2 +1,2 @@
 # kestrel
-compression of genomic sequences from FASTQ files
+A compression method to filter FASTQ reads by relative similarity 
