@@ -786,6 +786,7 @@ void PrintArgs(Parameters *P, Threads T, char *ref, char *tar){
     }
   fprintf(stderr, "Gamma .............................. %.2lf\n", P->gamma);
   fprintf(stderr, "Maximum Collisions ................. %u\n", P->col);
+  fprintf(stderr, "Threshold of acceptance ............ %.2lf\n", P->threshold);
   fprintf(stderr, "Output top filename ................ %s\n", P->output);
   fprintf(stderr, "Reference filename ................. %s\n", ref);
   fprintf(stderr, "Raw reads (FASTQ) filename ......... %s\n", tar);

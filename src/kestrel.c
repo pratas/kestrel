@@ -94,10 +94,10 @@ void CompressTarget(Threads T){
       if(sym == '@'){
         if((PA->nRead-1) % P->nThreads == T.id && PA->nRead > 1 && nBase > 1){
           //fprintf(stderr, "%g\n", bits / (2.0 * nBase));
-          if(bits / (2.0 * nBase) < P->threshold)
-            fprintf(Writer, "1");
+          if(bits / (2.0 * nBase) > P->threshold)
+            fprintf(Writer, "1"); // WRITE READ
           else
-            fprintf(Writer, "0");
+            fprintf(Writer, "0"); // IGNORE READ
           ResetModelsAndParam(symBuf, Shadow, CMW); // RESET MODELS
           r = nBase = bits = 0;
           }
