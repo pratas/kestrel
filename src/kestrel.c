@@ -85,7 +85,7 @@ void CompressTarget(Threads T){
   FILE *Writer = Fopen(name_o, "w");
 
   srand(T.id);
-  initNSymbol = nSymbol = 0;
+  initNSymbol = nBase = nSymbol = 0;
   while((k = fread(readBuf, 1, BUFFER_SIZE, Reader)))
     for(idxPos = 0 ; idxPos < k ; ++idxPos){
       ++nSymbol;
@@ -93,9 +93,8 @@ void CompressTarget(Threads T){
       sym = readBuf[idxPos];
 
       if(sym == '@'){
-        if((PA->nRead-1) % P->nThreads == T.id && PA->nRead > 1 && nBase > 1){
-          //fprintf(stderr, "%g\n", bits / (2.0 * nBase));
-          if(bits / (2.0 * nBase) > P->threshold)
+        if(PA->nRead % P->nThreads == T.id && nBase > 1){
+          if(BPBB(bits, nBase) > P->threshold)
             fprintf(Writer, "1"); // WRITE READ
           else
             fprintf(Writer, "0"); // IGNORE READ
@@ -116,7 +115,8 @@ void CompressTarget(Threads T){
 
       if(PA->nRead % P->nThreads == T.id){
 
-        if(sym == 'N') sym = rand() % 4;
+        if(sym == 'N') sym = 0;// rand() % 4;
+        // RANDOM BASE MODIFY THE RESULTS USING DIFFERENT THREADS
         else           sym = DNASymToNum(sym);
 
         symBuf->buf[symBuf->idx] = sym;
@@ -149,10 +149,6 @@ void CompressTarget(Threads T){
         }
       }
         
-  if(PA->nRead % P->nThreads == T.id){
-    // ?
-    }
-
   DeleteWeightModel(CMW);
   for(n = 0 ; n < totModels ; ++n)
     RemovePModel(pModel[n]);
@@ -270,7 +266,7 @@ void CompressAction(Threads *T, char *refName, char *baseName){
     fclose(TMP[n]);
     char name_o[MAX_NAME_OUT];
     sprintf(name_o, "%s.%u", P->output, n);
-    Fdelete(name_o);
+    //Fdelete(name_o);
     }
   fclose(IN);
   fclose(OUT);
