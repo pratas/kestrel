@@ -128,9 +128,9 @@ void CompressTarget(Threads T){
         }
 
       if(BPBB(bits, nBase) < P->threshold)
-        fprintf(Writer, "1"); // WRITE READ
+        fputc('1', Writer); // WRITE READ
       else
-        fprintf(Writer, "0"); // IGNORE READ
+        fputc('0', Writer); // IGNORE READ
     
       ResetModelsAndParam(symBuf, Shadow, CMW);
       }
