@@ -259,8 +259,9 @@ void CompressAction(Threads *T, char *refName, char *baseName){
 
   Read *Read = CreateRead(10000, 40000);
   while((Read = GetRead(IN, Read)) != NULL){
+    //fprintf(stderr, "%s\n", Read->header1[1]);
     for(n = 0 ; n < P->nThreads ; ++n){
-      if(fgetc(TMP[n]) == 1)
+      if(fgetc(TMP[n]) == '1')
         PutRead(Read, OUT);
       }
     }
@@ -269,7 +270,7 @@ void CompressAction(Threads *T, char *refName, char *baseName){
     fclose(TMP[n]);
     char name_o[MAX_NAME_OUT];
     sprintf(name_o, "%s.%u", P->output, n);
-    //Fdelete(name_o);
+    Fdelete(name_o);
     }
   fclose(IN);
   fclose(OUT);
