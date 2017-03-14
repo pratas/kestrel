@@ -11,6 +11,16 @@
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void Fdelete(char *name){
+  int ret = remove(name);
+  if(ret == 0)
+    ; //printf("File %s deleted successfully!\n", name);
+  else
+    printf("Error: unable to delete the file!\n");
+  }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 void Fclose(FILE *F){
   if(F == NULL){
     fprintf(stderr, "Error (Fclose): NULL file pointer.\n");

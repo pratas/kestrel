@@ -15,6 +15,7 @@
 #include "param.h"
 #include "msg.h"
 #include "parser.h"
+#include "reads.h"
 #include "buffer.h"
 #include "levels.h"
 #include "common.h"
@@ -242,6 +243,37 @@ void CompressAction(Threads *T, char *refName, char *baseName){
     pthread_create(&(t[n+1]), NULL, CompressThread, (void *) &(T[n]));
   for(n = 0 ; n < P->nThreads ; ++n) // DO NOT JOIN FORS!
     pthread_join(t[n+1], NULL);
+  fprintf(stderr, "Done!\n");
+
+
+  fprintf(stderr, "  [+] Joinning streams ............. ");
+
+  FILE *OUT = Fopen(P->output, "w");
+  FILE *IN  = Fopen(P->base,   "r");
+  FILE **TMP = (FILE **) Calloc(P->nThreads, sizeof(FILE *));
+  for(n = 0 ; n < P->nThreads ; ++n){
+    char name_o[MAX_NAME_OUT];
+    sprintf(name_o, "%s.%u", P->output, n);
+    TMP[n] = Fopen(name_o, "r");
+    }
+
+  Read *Read = CreateRead(10000, 40000);
+  while((Read = GetRead(IN, Read)) != NULL){
+    for(n = 0 ; n < P->nThreads ; ++n){
+      if(fgetc(TMP[n]) == 1)
+        PutRead(Read, OUT);
+      }
+    }
+
+  for(n = 0 ; n < P->nThreads ; ++n){
+    fclose(TMP[n]);
+    char name_o[MAX_NAME_OUT];
+    sprintf(name_o, "%s.%u", P->output, n);
+    //Fdelete(name_o);
+    }
+  fclose(IN);
+  fclose(OUT);
+
   fprintf(stderr, "Done!\n");
   }
 

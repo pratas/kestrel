@@ -27,10 +27,7 @@ typedef int8_t   I8;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-#define LOW_COMPLEX            10 //150  // BLUE
-#define MEDIUML_COMPLEX        40  // ?
-#define MEDIUMH_COMPLEX        135  // ?
-#define HIGH_COMPLEX           155//10    // RED
+#define MAX_NAME_OUT           10000
 #define SBASE                  65
 #define LOCAL_SIMILARITY       1
 #define MAX_LABEL              1024
@@ -83,13 +80,6 @@ typedef int8_t   I8;
 #define EXTRA_L_DEN            1
 #define EXTRA_L_CTX            8
 #define MAX_STR                2048
-
-#define WINDOW_RATIO           1300
-#define SUBSAMPLE_RATIO        5
-#define DEFAULT_THRESHOLD      0.5 
-#define DEFAULT_WINDOW         -1
-#define DEFAULT_SUBSAMPLE      0
-#define DEFAULT_SAMPLE_RATIO   10000
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

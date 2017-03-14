@@ -19,6 +19,7 @@ SymValue;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void        Fdelete          (char *);
 void        Fclose           (FILE *);
 void        Fseeko           (FILE *, off_t, int32_t);
 uint64_t    Ftello           (FILE *);
