@@ -93,15 +93,17 @@ void CompressTarget(Threads T){
       sym = readBuf[idxPos];
 
       if(sym == '@'){
-        if(PA->nRead % P->nThreads == T.id && nBase > 1){
-          if(BPBB(bits, nBase) < P->threshold)
-            fprintf(Writer, "1"); // WRITE READ
-          else
-            fprintf(Writer, "0"); // IGNORE READ
+        if(nBase > 1){
+          if(PA->nRead % P->nThreads == T.id){
+            if(BPBB(bits, nBase) < P->threshold)
+              fprintf(Writer, "1"); // WRITE READ
+            else
+              fprintf(Writer, "0"); // IGNORE READ
+            }
           ResetModelsAndParam(symBuf, Shadow, CMW); // RESET MODELS
           r = nBase = bits = 0;
+          PA->nRead++;
           }
-        PA->nRead++;
         continue;
         }
 
@@ -113,40 +115,37 @@ void CompressTarget(Threads T){
         }
       if(PA->dna == 0 || sym == '\n') continue;
 
-      if(PA->nRead % P->nThreads == T.id){
+      if(sym == 'N') sym = 0;// rand() % 4;
+      // RANDOM BASE MODIFY THE RESULTS USING DIFFERENT THREADS
+      else           sym = DNASymToNum(sym);
 
-        if(sym == 'N') sym = 0;// rand() % 4;
-        // RANDOM BASE MODIFY THE RESULTS USING DIFFERENT THREADS
-        else           sym = DNASymToNum(sym);
-
-        symBuf->buf[symBuf->idx] = sym;
-        memset((void *)PT->freqs, 0, ALPHABET_SIZE * sizeof(double));
-        n = 0;
-        pos = &symBuf->buf[symBuf->idx-1];
-        for(cModel = 0 ; cModel < P->nModels ; ++cModel){
-          CModel *CM = Shadow[cModel];
-          GetPModelIdx(pos, CM);
-          ComputePModel(Models[cModel], pModel[n], CM->pModelIdx, CM->alphaDen);
-          ComputeWeightedFreqs(CMW->weight[n], pModel[n], PT);
-          if(CM->edits != 0){
-            ++n;
-            CM->SUBS.seq->buf[CM->SUBS.seq->idx] = sym;
-            CM->SUBS.idx = GetPModelIdxCorr(CM->SUBS.seq->buf+CM->SUBS.seq->idx
-            -1, CM, CM->SUBS.idx);
-            ComputePModel(Models[cModel], pModel[n], CM->SUBS.idx, CM->SUBS.eDen);
-            ComputeWeightedFreqs(CMW->weight[n], pModel[n], PT);
-            }
+      symBuf->buf[symBuf->idx] = sym;
+      memset((void *)PT->freqs, 0, ALPHABET_SIZE * sizeof(double));
+      n = 0;
+      pos = &symBuf->buf[symBuf->idx-1];
+      for(cModel = 0 ; cModel < P->nModels ; ++cModel){
+        CModel *CM = Shadow[cModel];
+        GetPModelIdx(pos, CM);
+        ComputePModel(Models[cModel], pModel[n], CM->pModelIdx, CM->alphaDen);
+        ComputeWeightedFreqs(CMW->weight[n], pModel[n], PT);
+        if(CM->edits != 0){
           ++n;
+          CM->SUBS.seq->buf[CM->SUBS.seq->idx] = sym;
+          CM->SUBS.idx = GetPModelIdxCorr(CM->SUBS.seq->buf+CM->SUBS.seq->idx
+          -1, CM, CM->SUBS.idx);
+          ComputePModel(Models[cModel], pModel[n], CM->SUBS.idx, CM->SUBS.eDen);
+          ComputeWeightedFreqs(CMW->weight[n], pModel[n], PT);
           }
-
-        ComputeMXProbs(PT, MX);
-        bits += PModelSymbolLog(MX, sym);
-        ++nBase;
-        CalcDecayment(CMW, pModel, sym, P->gamma);
-        RenormalizeWeights(CMW);
-        CorrectXModels(Shadow, pModel, sym);
-        UpdateCBuffer(symBuf);
+        ++n;
         }
+
+      ComputeMXProbs(PT, MX);
+      bits += PModelSymbolLog(MX, sym);
+      ++nBase;
+      CalcDecayment(CMW, pModel, sym, P->gamma);
+      RenormalizeWeights(CMW);
+      CorrectXModels(Shadow, pModel, sym);
+      UpdateCBuffer(symBuf);
       }
         
   DeleteWeightModel(CMW);
@@ -241,9 +240,7 @@ void CompressAction(Threads *T, char *refName, char *baseName){
     pthread_join(t[n+1], NULL);
   fprintf(stderr, "Done!\n");
 
-
   fprintf(stderr, "  [+] Joinning streams ............. ");
-
   FILE *OUT = Fopen(P->output, "w");
   FILE *IN  = Fopen(P->base,   "r");
   FILE **TMP = (FILE **) Calloc(P->nThreads, sizeof(FILE *));
@@ -252,14 +249,12 @@ void CompressAction(Threads *T, char *refName, char *baseName){
     sprintf(name_o, "%s.%u", P->output, n);
     TMP[n] = Fopen(name_o, "r");
     }
-
   Read *Read = CreateRead(10000, 40000);
   n = 0;
   while((Read = GetRead(IN, Read)) != NULL){
     if(fgetc(TMP[n++ % P->nThreads]) == '1')
       PutRead(Read, OUT);
     }
-
   for(n = 0 ; n < P->nThreads ; ++n){
     fclose(TMP[n]);
     char name_o[MAX_NAME_OUT];
@@ -268,7 +263,6 @@ void CompressAction(Threads *T, char *refName, char *baseName){
     }
   fclose(IN);
   fclose(OUT);
-
   fprintf(stderr, "Done!\n");
   }
 
