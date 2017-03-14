@@ -44,6 +44,8 @@ int FBasesPol(int b){
     case 'c': return 'C';
     case 'g': return 'G';
     case 't': return 'T';
+    case 'N': return 'N';
+    case 'n': return 'N';
     default: return -1;
     }
   return -1;

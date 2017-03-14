@@ -51,7 +51,6 @@ void CompressTarget(Threads T){
   uint32_t    n, k, idxPos, totModels, cModel;
   PARSER      *PA = CreateParser();
   CBUF        *symBuf = CreateCBuffer(BUFFER_SIZE, BGUARD);
-  uint8_t     *readBuf = (uint8_t *) Calloc(BUFFER_SIZE, sizeof(uint8_t));
   uint8_t     sym, *pos, conName[MAX_NAME];
   PModel      **pModel, *MX;
   CModel      **Shadow; // SHADOWS FOR SUPPORTING MODELS WITH THREADING
@@ -85,69 +84,60 @@ void CompressTarget(Threads T){
   FILE *Writer = Fopen(name_o, "w");
 
   srand(T.id);
-  initNSymbol = nBase = nSymbol = 0;
-  while((k = fread(readBuf, 1, BUFFER_SIZE, Reader)))
-    for(idxPos = 0 ; idxPos < k ; ++idxPos){
-      ++nSymbol;
+  Read *Read = CreateRead(10000, 40000);
+  while((Read = GetRead(Reader, Read)) != NULL){
 
-      sym = readBuf[idxPos];
+    if(PA->nRead % P->nThreads == T.id){
+      nBase = strlen(Read->bases) - 1; // IT ALSO LOADS '\n' AT THE END
+      bits  = 0;
 
-      if(sym == '@'){
-        if(nBase > 1){
-          if(PA->nRead % P->nThreads == T.id){
-            if(BPBB(bits, nBase) < P->threshold)
-              fprintf(Writer, "1"); // WRITE READ
-            else
-              fprintf(Writer, "0"); // IGNORE READ
-            }
-          ResetModelsAndParam(symBuf, Shadow, CMW); // RESET MODELS
-          r = nBase = bits = 0;
-          PA->nRead++;
-          }
-        continue;
-        }
+      for(idxPos = 0 ; idxPos < nBase ; ++idxPos){
 
-      switch(PA->line){
-        case 0: if(sym == '\n'){ PA->line = 1; PA->dna = 1; } break;
-        case 1: if(sym == '\n'){ PA->line = 2; PA->dna = 0; } break;
-        case 2: if(sym == '\n'){ PA->line = 3; PA->dna = 0; } break;
-        case 3: if(sym == '\n'){ PA->line = 0; PA->dna = 0; } break;
-        }
-      if(PA->dna == 0 || sym == '\n') continue;
+        sym = Read->bases[idxPos];
 
-      if(sym == 'N') sym = 0;// rand() % 4;
-      // RANDOM BASE MODIFY THE RESULTS USING DIFFERENT THREADS
-      else           sym = DNASymToNum(sym);
+        if(sym == 'N') sym = 0;// rand() % 4; // ASSUME A 'A' -> 0, CAUSE:
+        // RANDOM BASE MODIFY THE RESULTS USING DIFFERENT THREADS
+        else           sym = DNASymToNum(sym);
 
-      symBuf->buf[symBuf->idx] = sym;
-      memset((void *)PT->freqs, 0, ALPHABET_SIZE * sizeof(double));
-      n = 0;
-      pos = &symBuf->buf[symBuf->idx-1];
-      for(cModel = 0 ; cModel < P->nModels ; ++cModel){
-        CModel *CM = Shadow[cModel];
-        GetPModelIdx(pos, CM);
-        ComputePModel(Models[cModel], pModel[n], CM->pModelIdx, CM->alphaDen);
-        ComputeWeightedFreqs(CMW->weight[n], pModel[n], PT);
-        if(CM->edits != 0){
-          ++n;
-          CM->SUBS.seq->buf[CM->SUBS.seq->idx] = sym;
-          CM->SUBS.idx = GetPModelIdxCorr(CM->SUBS.seq->buf+CM->SUBS.seq->idx
-          -1, CM, CM->SUBS.idx);
-          ComputePModel(Models[cModel], pModel[n], CM->SUBS.idx, CM->SUBS.eDen);
+        symBuf->buf[symBuf->idx] = sym;
+        memset((void *)PT->freqs, 0, ALPHABET_SIZE * sizeof(double));
+        n = 0;
+        pos = &symBuf->buf[symBuf->idx-1];
+        for(cModel = 0 ; cModel < P->nModels ; ++cModel){
+          CModel *CM = Shadow[cModel];
+          GetPModelIdx(pos, CM);
+          ComputePModel(Models[cModel], pModel[n], CM->pModelIdx, CM->alphaDen);
           ComputeWeightedFreqs(CMW->weight[n], pModel[n], PT);
+          if(CM->edits != 0){
+            ++n;
+            CM->SUBS.seq->buf[CM->SUBS.seq->idx] = sym;
+            CM->SUBS.idx = GetPModelIdxCorr(CM->SUBS.seq->buf+CM->SUBS.seq->idx
+            -1, CM, CM->SUBS.idx);
+            ComputePModel(Models[cModel], pModel[n], CM->SUBS.idx, CM->SUBS.eDen);
+            ComputeWeightedFreqs(CMW->weight[n], pModel[n], PT);
+            }
+          ++n;
           }
-        ++n;
+
+        ComputeMXProbs(PT, MX);
+        bits += PModelSymbolLog(MX, sym);
+        CalcDecayment(CMW, pModel, sym, P->gamma);
+        RenormalizeWeights(CMW);
+        CorrectXModels(Shadow, pModel, sym);
+        UpdateCBuffer(symBuf);
         }
 
-      ComputeMXProbs(PT, MX);
-      bits += PModelSymbolLog(MX, sym);
-      ++nBase;
-      CalcDecayment(CMW, pModel, sym, P->gamma);
-      RenormalizeWeights(CMW);
-      CorrectXModels(Shadow, pModel, sym);
-      UpdateCBuffer(symBuf);
+      if(BPBB(bits, nBase) < P->threshold)
+        fprintf(Writer, "1"); // WRITE READ
+      else
+        fprintf(Writer, "0"); // IGNORE READ
+    
+      ResetModelsAndParam(symBuf, Shadow, CMW);
       }
-        
+
+    PA->nRead++;
+    }
+
   DeleteWeightModel(CMW);
   for(n = 0 ; n < totModels ; ++n)
     RemovePModel(pModel[n]);
@@ -157,7 +147,6 @@ void CompressTarget(Threads T){
   for(n = 0 ; n < P->nModels ; ++n)
     FreeShadow(Shadow[n]);
   Free(Shadow);
-  Free(readBuf);
   RemoveCBuffer(symBuf);
   RemoveParser(PA);
   fclose(Reader);
@@ -189,11 +178,18 @@ void LoadReference(char *refName){
   uint8_t  sym, irSym = 0;
   FileType(PA, Reader);
   rewind(Reader);
+  srand(0);
 
   while((k = fread(readBuf, 1, BUFFER_SIZE, Reader)))
     for(idxPos = 0 ; idxPos < k ; ++idxPos){
-      if(ParseSym(PA, (sym = readBuf[idxPos])) == -1){ idx = 0; continue; }
-      symBuf->buf[symBuf->idx] = sym = DNASymToNum(sym);
+      if(ParseSym(PA, (sym = readBuf[idxPos])) == -1){ 
+        idx = 0; 
+        continue; 
+        }
+      if(sym == 'N') // WE CAN RAND HERE CAUSE IS ALWAYS IN ONE THREAD
+        symBuf->buf[symBuf->idx] = sym = (rand() % 4);
+      else
+        symBuf->buf[symBuf->idx] = sym = DNASymToNum(sym);
       for(n = 0 ; n < P->nModels ; ++n){
         CModel *CM = Models[n];
         GetPModelIdx(symBuf->buf+symBuf->idx-1, CM);
