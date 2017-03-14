@@ -94,7 +94,7 @@ void CompressTarget(Threads T){
 
       if(sym == '@'){
         if(PA->nRead % P->nThreads == T.id && nBase > 1){
-          if(BPBB(bits, nBase) > P->threshold)
+          if(BPBB(bits, nBase) < P->threshold)
             fprintf(Writer, "1"); // WRITE READ
           else
             fprintf(Writer, "0"); // IGNORE READ
@@ -254,12 +254,15 @@ void CompressAction(Threads *T, char *refName, char *baseName){
     }
 
   Read *Read = CreateRead(10000, 40000);
+  n = 0;
   while((Read = GetRead(IN, Read)) != NULL){
-    //fprintf(stderr, "%s\n", Read->header1[1]);
-    for(n = 0 ; n < P->nThreads ; ++n){
-      if(fgetc(TMP[n]) == '1')
-        PutRead(Read, OUT);
-      }
+    if(fgetc(TMP[n % P->nThreads]) == '1')
+      PutRead(Read, OUT);
+/*
+    if(++n == P->nThreads)
+      n = 0;
+*/  
+    ++n;
     }
 
   for(n = 0 ; n < P->nThreads ; ++n){

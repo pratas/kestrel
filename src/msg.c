@@ -30,7 +30,7 @@ void PrintMenu(void){
   "  -v                       verbose mode (more information),              \n"
   "  -s                       show compression levels,                      \n"
   "  -l <level>               compression level [%u;%u],                    \n"
-  "  -t <threshold>           get reads higher than threshold [0.0;1.0],    \n"
+  "  -t <threshold>           similarity threshold [0.0;1.0],               \n"
   "  -p <sample>              subsampling (default: %u),                    \n"
   "  -n <nThreads>            number of threads (default: %u),              \n"
   "  -o <FILE>                output filename,                              \n"
