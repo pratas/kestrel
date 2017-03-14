@@ -256,13 +256,8 @@ void CompressAction(Threads *T, char *refName, char *baseName){
   Read *Read = CreateRead(10000, 40000);
   n = 0;
   while((Read = GetRead(IN, Read)) != NULL){
-    if(fgetc(TMP[n % P->nThreads]) == '1')
+    if(fgetc(TMP[n++ % P->nThreads]) == '1')
       PutRead(Read, OUT);
-/*
-    if(++n == P->nThreads)
-      n = 0;
-*/  
-    ++n;
     }
 
   for(n = 0 ; n < P->nThreads ; ++n){
