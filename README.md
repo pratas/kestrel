@@ -1,5 +1,5 @@
 <p align="center"><img src="imgs/kestrel.png" 
-alt="KESTREL" width="400" height="100" border="0" /></p>
+alt="KESTREL" width="400" border="0" /></p>
 
 <p align="justify">A compression method to filter FASTQ reads by relative similarity. Currently, KESTREL runs on a command line environment. It reports into the output file the reads with similarity relatively to a reference, using compression technology. KESTREL can run in a <b>multi-thread mode</b> to minimize computation times.</p>
 
