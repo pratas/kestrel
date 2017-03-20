@@ -255,7 +255,7 @@ void CompressAction(Threads *T, char *refName, char *baseName){
     fclose(TMP[n]);
     char name_o[MAX_NAME_OUT];
     sprintf(name_o, "%s.%u", P->output, n);
-    //Fdelete(name_o);
+    Fdelete(name_o);
     }
   fclose(IN);
   fclose(OUT);
@@ -371,9 +371,6 @@ int32_t main(int argc, char *argv[]){
   fprintf(stderr, "Done!\n");
 
   StopTimeNDRM(Time, clock());
-  fprintf(stderr, "\n");
-
-  fprintf(stderr, "==[ RESULTS ]=======================\n");
   fprintf(stderr, "\n");
 
   fprintf(stderr, "==[ STATISTICS ]====================\n");
