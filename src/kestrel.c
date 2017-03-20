@@ -373,14 +373,16 @@ int32_t main(int argc, char *argv[]){
   StopTimeNDRM(Time, clock());
   fprintf(stderr, "\n");
 
-  fprintf(stderr, "==[ STATISTICS ]====================\n");
-  StopCalcAll(Time, clock());
-  fprintf(stderr, "\n");
+  fprintf(stderr, "==[ RESULTS ]=======================\n");
+  fprintf(stderr, "Results have been sent to file:%s\n", P->output);
+
+  //fprintf(stderr, "==[ STATISTICS ]====================\n");
+  //StopCalcAll(Time, clock());
+  //fprintf(stderr, "\n");
 
   RemoveClock(Time);
-  for(ref = 0 ; ref < P->nThreads ; ++ref){
+  for(ref = 0 ; ref < P->nThreads ; ++ref)
     Free(T[ref].model);
-    }
   Free(T);
 
   return EXIT_SUCCESS;
