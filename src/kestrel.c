@@ -127,11 +127,22 @@ void CompressTarget(Threads T){
         UpdateCBuffer(symBuf);
         }
 
-      if(BPBB(bits, nBase) < P->threshold)
-        fputc('1', Writer); // WRITE READ
-      else
-        fputc('0', Writer); // IGNORE READ
-    
+      if(BPBB(bits, nBase) < P->threshold){
+        if(P->invert){
+          fputc('0', Writer); // IGNORE READ
+          }
+        else{         
+          fputc('1', Writer); // WRITE READ
+          }
+        }
+      else{
+        if(P->invert){
+          fputc('1', Writer); // WRITE READ
+          }
+        else{
+          fputc('0', Writer); // IGNORE READ
+          } 
+        }
       ResetModelsAndParam(symBuf, Shadow, CMW);
       }
 
@@ -293,6 +304,7 @@ int32_t main(int argc, char *argv[]){
 
   P->verbose  = ArgsState  (DEFAULT_VERBOSE, p, argc, "-v");
   P->force    = ArgsState  (DEFAULT_FORCE,   p, argc, "-F");
+  P->invert   = ArgsState  (DEFAULT_INVERT,  p, argc, "-i");
   P->sample   = ArgsNum    (DEFAULT_SAMPLE,  p, argc, "-p", MIN_SAP, MAX_SAP);
   P->level    = ArgsNum    (0,               p, argc, "-l", MIN_LEV, MAX_LEV);
   P->nThreads = ArgsNum    (DEFAULT_THREADS, p, argc, "-n", MIN_THREADS, 

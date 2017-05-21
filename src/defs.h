@@ -37,6 +37,7 @@ typedef int8_t   I8;
 #define DEFAULT_HELP           0
 #define DEFAULT_VERBOSE        0
 #define DEFAULT_FORCE          0
+#define DEFAULT_INVERT         0
 #define DEFAULT_LOCAL          0
 #define DEFAULT_LEVEL          36
 #define DEFAULT_SHOWS          1
