@@ -28,6 +28,7 @@ void PrintMenu(void){
   "  -F                       force mode (overwrites top file),             \n"
   "  -V                       display version number,                       \n"
   "  -v                       verbose mode (more information),              \n"
+  "  -i                       inverts search,                               \n"
   "  -s                       show compression levels,                      \n"
   "  -l <level>               compression level [%u;%u],                    \n"
   "  -t <threshold>           similarity threshold [0.0;1.0],               \n"

@@ -22,6 +22,7 @@ typedef struct{
   U8       force;
   U8       estim;
   U8       level;
+  U8       invert;
   U32      sample;
   U32      col;
 /*

@@ -19,7 +19,7 @@ make
 
 On using this software/method, please cite:
 
-Diogo Pratas, Armando J. Pinho and Paulo J. S. G. Ferreira. Efficient compression of genomic sequences. Data Compression Conference (DCC), p. 231-240, March 2016. 
+Paper submitted.
 
 ## ISSUES ##
 
