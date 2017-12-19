@@ -55,7 +55,7 @@ void PrintVersion(void){
   "                     A compression method to filter                      \n"
   "                   FASTQ reads by relative similarity.                   \n"
   "                                                                         \n"
-  "              Copyright (C) 2014-2017 University of Aveiro.              \n"
+  "              Copyright (C) 2014-2018 University of Aveiro.              \n"
   "                                                                         \n"
   "                  This is a Free software, under GPLv3.                  \n"
   "                                                                         \n"
