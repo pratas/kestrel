@@ -39,5 +39,16 @@ if [[ "$GET_GARGAMMEL" -eq "1" ]]; then
   git clone --depth 1 https://github.com/grenaud/gargammel.git
   cd gargammel/
   make
+  cd ..
 fi
 #==============================================================================
+# SIMULATE
+if [[ "$SIMULATE" -eq "1" ]]; then
+  cd gargammel/
+  mkdir data
+  mkdir data/bact
+  make bacterialex
+  cp -v bactDBexample/clovis/fasta/* data/bact/
+  mkdir data/endo
+    
+fi

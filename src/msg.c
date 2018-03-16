@@ -20,7 +20,7 @@ void ModelsExplanation(void){
 void PrintMenu(void){
   fprintf(stderr,
   "Usage: KESTREL [OPTION]... [FILE1] [FILE2]                               \n"
-  "A compression method to filter FASTQ reads by relative similarity.       \n"
+  "An ultra-fast tool to filter exogenous DNA from ancient samples.         \n"
   "                                                                         \n"
   "Non-mandatory arguments:                                                 \n"
   "                                                                         \n"
