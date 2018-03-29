@@ -240,7 +240,7 @@ void CompressAction(Threads *T, char *refName, char *baseName){
   LoadReference(refName);
   fprintf(stderr, "Done!\n");
 
-  fprintf(stderr, "  [+] Compressing FASTQ reads ...... ");
+  fprintf(stderr, "  [+] Filtering FASTQ reads ........ ");
   for(n = 0 ; n < P->nThreads ; ++n)
     pthread_create(&(t[n+1]), NULL, CompressThread, (void *) &(T[n]));
   for(n = 0 ; n < P->nThreads ; ++n) // DO NOT JOIN FORS!
